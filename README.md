@@ -1,29 +1,18 @@
 # std
 
 ## Purpose
-[Describe the purpose of this SageLang library module.]
+SageLang Standard Library, containing foundational utilities and data structures for daily development.
 
 ## Features
-- [Feature 1]
-- [Feature 2]
-
-## Installation
-Add as a submodule to your SageLang project:
-```bash
-git submodule add <repository-url> core/lib/std
-```
-
-## API Documentation
-[Link to detailed API documentation]
+- **Concurrency**: Threads, channels, atomic operations, sync primitives (condvar, rwlock).
+- **Utilities**: Argparse, datetime, formatting, regex, logging.
+- **System**: Process management, testing, profiling.
 
 ## Usage Example
 ```sage
-import std
-# Example usage...
+import std.fmt
+import std.threadpool
+
+let threadpool = threadpool.create(4)
+std.fmt.print("Hello, Std!")
 ```
-
-## Contributing
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
-
-## License
-MIT (or maintain main project license)
