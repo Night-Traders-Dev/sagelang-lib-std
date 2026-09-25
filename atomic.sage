@@ -1,5 +1,5 @@
 gc_disable()
-# Atomic-like operations (simulated for single-threaded Sage)
+# Native atomic operations for threaded execution
 # Provides compare-and-swap, atomic counters, and spin locks
 
 # ============================================================================
@@ -7,27 +7,25 @@ gc_disable()
 # ============================================================================
 
 proc atomic_int(initial):
-    let a = {}
-    a["value"] = initial
-    return a
+    return atomic_new(initial)
 
 @inline
 proc load(atom):
-    return atom["value"]
+    return atomic_load(atom)
 
 @inline
 proc store(atom, value):
-    atom["value"] = value
+    return atomic_store(atom, value)
 
 @inline
 proc add(atom, delta):
-    atom["value"] = atom["value"] + delta
-    return atom["value"]
+    atomic_add(atom, delta)
+    return atomic_load(atom)
 
 @inline
 proc sub(atom, delta):
-    atom["value"] = atom["value"] - delta
-    return atom["value"]
+    atomic_add(atom, 0 - delta)
+    return atomic_load(atom)
 
 @inline
 proc increment(atom):
@@ -39,62 +37,46 @@ proc decrement(atom):
 
 # Compare-and-swap: if current == expected, set to new_val, return old
 proc cas(atom, expected, new_val):
-    let old = atom["value"]
-    if old == expected:
-        atom["value"] = new_val
-        return true
-    return false
+    return atomic_cas(atom, expected, new_val)
 
 proc exchange(atom, new_val):
-    let old = atom["value"]
-    atom["value"] = new_val
-    return old
+    return atomic_exchange(atom, new_val)
 
 # ============================================================================
 # Atomic flag (boolean)
 # ============================================================================
 
 proc atomic_flag():
-    let f = {}
-    f["value"] = false
-    return f
+    return atomic_new(0)
 
 @inline
 proc test_and_set(flag):
-    let old = flag["value"]
-    flag["value"] = true
-    return old
+    return atomic_exchange(flag, 1) == 1
 
 @inline
 proc clear_flag(flag):
-    flag["value"] = false
+    atomic_store(flag, 0)
 
 # ============================================================================
 # Spin lock (based on atomic flag)
 # ============================================================================
 
 proc create_spinlock():
-    let lock = {}
-    lock["locked"] = false
-    lock["owner"] = nil
-    return lock
+    return atomic_new(0)
 
 proc spin_lock(lock):
-    # In single-threaded Sage, this just sets the flag
-    lock["locked"] = true
+    while not atomic_cas(lock, 0, 1):
+        pass
 
 proc spin_unlock(lock):
-    lock["locked"] = false
+    atomic_store(lock, 0)
 
 proc spin_try_lock(lock):
-    if lock["locked"]:
-        return false
-    lock["locked"] = true
-    return true
+    return atomic_cas(lock, 0, 1)
 
 @inline
 proc is_locked(lock):
-    return lock["locked"]
+    return atomic_load(lock) != 0
 
 # ============================================================================
 # Atomic counter with stats
